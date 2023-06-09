@@ -1,6 +1,4 @@
 import sqlite3
-
-
 class Libreria:
     def __init__(self):
         self.conexion = Conexiones()
@@ -16,7 +14,6 @@ class Libreria:
         self.conexion.miCursor.execute("CREATE TABLE HISTORICO_LIBROS (id_libro INTEGER, precio FLOAT NOT NULL, fechaUltimoPrecio VARCHAR(30), FOREIGN KEY (id_libro, precio, fechaUltimoPrecio) REFERENCES LIBROS(id_libro, precio, fechaUltimoPrecio))")
         self.conexion.miConexion.commit()
     
-
     #funciones extras
     def validar_id(self, id_libro):
         self.conexion.miCursor.execute("SELECT id_libro FROM LIBROS")
@@ -37,7 +34,7 @@ class Libreria:
             print("Libro agregado exitosamente")
         except:
             print("Error al agregar un libro")
-    
+
     #2
     def modificar_libro(self, id_libro, precio):
         try:
@@ -74,7 +71,6 @@ class Libreria:
                 self.conexion.miCursor.execute("SELECT * FROM LIBROS ORDER BY autor ASC")
             elif orden == "3":
                 self.conexion.miCursor.execute("SELECT * FROM LIBROS ORDER BY titulo ASC")
-
             resultados = self.conexion.miCursor.fetchall()
 
             # Encabezados de las columnas
@@ -108,11 +104,6 @@ class Libreria:
 
             print(linea_separadora)
 
-            
-            """
-            for fila in resultados:
-                #print(fila)
-                print(f"ID: {fila[0]}, ISBN: {fila[1]}, Título: {fila[2]}, Autor: {fila[3]}, Genero: {fila[4]}, Precio: {fila[5]}, Fecha: {fila[6]}, Cantidad: {fila[7]}")"""
         except:
             print("Error al listar los libros")
 
@@ -344,9 +335,10 @@ while True:
         print("3- Mostrar por titulo")
         print("0- Salir del menú")
         
-        orden = input("Por favor ingrese el criterio de orden (ID/Autor/Titulo): ")
+        orden = int(input("Por favor ingrese el criterio de orden (ID/Autor/Titulo): "))
+        while orden < 0 or orden > 3:
+            orden= int(input("¡ERROR! Ingrese una opcion valida: "))
         libreria.listarlibros(orden)
-
 
     elif opcion == 6:
         id_libro = int(input("Ingrese el id del libro vendido: "))
@@ -367,16 +359,12 @@ while True:
         else:
             print("ID no encontrado")
 
-        
-
-        
         libreria.hacer_linea()
     
     elif opcion == 7:
         libreria.insertar_historico()
         porcentaje = float(input("Ingrese el porcentaje del aumento/disminucion (100 = 100%): "))
         fechaUltimoPrecio = input("Ingrese la fecha del cambio: ")
-        
         libreria.actualizar_precio(porcentaje, fechaUltimoPrecio)
         libreria.hacer_linea()
     
@@ -384,7 +372,6 @@ while True:
         fechaMenu8 = input("Ingrese un fecha para mostrar sus registros anteriores: ")
         libreria.registros_anteriores(fechaMenu8)
         libreria.hacer_linea()
-
 
     elif opcion == 0:
         libreria.cerrar_libreria()
