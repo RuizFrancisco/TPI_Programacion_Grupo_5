@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 
 
 class Libreria:
@@ -22,9 +23,21 @@ class Libreria:
         self.conexion.miCursor.execute("SELECT id_libro FROM LIBROS")
         resultados = self.conexion.miCursor.fetchall()
         for fila in resultados:
-            if id_libro == fila[0]:
+            if int(id_libro) == fila[0]:
                 return True    
         return False
+    
+    def validar_fecha(self,fecha):
+        dia, mes, anio = map(int, fecha.split('/'))
+        fecha_valida = False
+        while not fecha_valida:
+            try:
+             fecha_filtro = datetime.date(anio, mes, dia)
+             fecha_valida = True
+            except ValueError:
+             fecha = input("¡ERROR! Ingrese una fecha válida (dd/mm/yyyy): ")
+             dia, mes, anio = map(int, fecha.split('/'))
+        return fecha
 
     def hacer_linea(self):
         print("----------------------")
@@ -57,8 +70,16 @@ class Libreria:
             print("Error al borrar el libro")
 
     #4
-    def incrementar_cantidad(self, id_libro, cantidadDisponibles):
+    def incrementar_cantidad(self, id_libro, cantidadIncrementar):
         try:
+            self.conexion.miCursor.execute("SELECT * FROM LIBROS")
+            resultados = self.conexion.miCursor.fetchall()
+
+            for fila in resultados:
+                if int(id_libro) == fila[0]:
+                    cantidadDisponibles = fila[7]
+                    cantidadDisponibles = cantidadDisponibles + cantidadIncrementar
+
             self.conexion.miCursor.execute("UPDATE LIBROS SET cantidadDisponibles = ? WHERE id_libro = ?", (cantidadDisponibles, id_libro))
             self.conexion.miConexion.commit()
             print("Cantidad del libro incrementada correctamente")
@@ -109,7 +130,7 @@ class Libreria:
             print(linea_separadora)
 
             
-            """
+            """                                       Asi funcionaba, pero no quedaba como una tabla  
             for fila in resultados:
                 #print(fila)
                 print(f"ID: {fila[0]}, ISBN: {fila[1]}, Título: {fila[2]}, Autor: {fila[3]}, Genero: {fila[4]}, Precio: {fila[5]}, Fecha: {fila[6]}, Cantidad: {fila[7]}")"""
@@ -159,8 +180,15 @@ class Libreria:
         except:
             print("Error al agregar una venta")
 
-    def descontar_cantidad(self, id_libro, cantidadDisponibles):
+    def descontar_cantidad(self, id_libro, cantidadVenta):
         try:
+            self.conexion.miCursor.execute("SELECT * FROM LIBROS")
+            resultados = self.conexion.miCursor.fetchall()
+
+            for fila in resultados:
+                if int(id_libro) == fila[0]:
+                    cantidadDisponibles = fila[7]
+                    cantidadDisponibles = cantidadDisponibles - cantidadVenta
             self.conexion.miCursor.execute("UPDATE LIBROS SET cantidadDisponibles = ? WHERE id_libro = ?", (cantidadDisponibles, id_libro))
             self.conexion.miConexion.commit()
             print("Cantidad descontada correctamente")
@@ -219,7 +247,7 @@ class Libreria:
                 precio = fila[5]
                 precio = precio + (precio * (porcentaje/100))
                 id_libro = fila[0]
-                self.conexion.miCursor.execute("UPDATE LIBROS SET precio = ?, fechaUltimoPrecio = ? WHERE id_libro = ?", (precio, fechaUltimoPrecio, id_libro))
+                self.conexion.miCursor.execute("UPDATE LIBROS SET precio = ?, fechaUltimoPrecio = ? WHERE id_libro = ?", (round(precio, 2), fechaUltimoPrecio, id_libro))
                 self.conexion.miConexion.commit()
             
             print("Se actualizaron los precios correctamente")
@@ -229,11 +257,18 @@ class Libreria:
     #8
     def registros_anteriores(self, fechaMenu8):
         try:
-            self.conexion.miCursor.execute("SELECT * FROM HISTORICO_LIBROS ORDER BY fechaUltimoPrecio ASC")
+            self.conexion.miCursor.execute("SELECT * FROM HISTORICO_LIBROS ORDER BY fechaUltimoPrecio DESC")
             resultados = self.conexion.miCursor.fetchall()
+            dia, mes, anio = map(int, fechaMenu8.split('/'))
             for fila in resultados:
-                if fila[2] < fechaMenu8:
+                dia1, mes1, anio1 = map(int, fila[2].split('/'))
+                if anio > anio1:
                     print(fila)
+                elif anio == anio1 and mes > mes1:
+                    print(fila)
+                elif anio == anio1 and mes == mes1 and dia > dia1:
+                    print(fila)
+                    
             print("Los registros se obtuvieron correctamente")
         except:
             print("Error al obtener los registros")
@@ -277,17 +312,18 @@ while True:
         precio = float(input("Por favor ingrese el precio del libro: "))
         while precio <= 0:
             precio = float(input("¡ERROR! Ingrese el precio del libro (mayor a 0): "))
-        fechaUltimoPrecio = input("Por favor ingrese la fecha del ultimo precio del libro: ")
+        fechaUltimoPrecio = input("Por favor ingrese la fecha del ultimo precio del libro (dd/mm/yyyy): ")
+        fecha_validada = libreria.validar_fecha(fechaUltimoPrecio)
         cantidadDisponibles = int(input("Por favor ingrese la cantidad de unidades disponibles: "))
         while cantidadDisponibles <= 0:
             cantidadDisponibles = int(input("¡ERROR! Ingrese la cantidad de unidades disponibles (mayor a 0): "))
-        libreria.agregar_libro(isbn, titulo, autor, genero, precio, fechaUltimoPrecio, cantidadDisponibles)
+        libreria.agregar_libro(isbn, titulo, autor, genero, precio, fecha_validada, cantidadDisponibles)
         libreria.hacer_linea()
 
     elif opcion == 2:
-        id_libro = int(input("Por favor ingrese el ID del libro a modificar: "))
-        while id_libro <= 0:
-            id_libro = int(input("¡ERROR! Ingrese el ID del libro a modificar (mayor a 0): "))
+        id_libro = input("Por favor ingrese el ID del libro a modificar: ")
+        while id_libro <= "0":
+            id_libro = input("¡ERROR! Ingrese el ID del libro a modificar (mayor a 0): ")
 
         validacion = libreria.validar_id(id_libro)
         if validacion:
@@ -307,16 +343,16 @@ while True:
         libreria.hacer_linea()
 
     elif opcion == 3:
-        id_libro = int(input("Por favor ingrese el ID del quiere borrar: "))
-        while id_libro <= 0:
-            id_libro = int(input("¡ERROR! Ingrese el ID del libro a eliminar (mayor a 0): "))
+        id_libro = input("Por favor ingrese el ID del quiere borrar: ")
+        while id_libro <= "0":
+            id_libro = input("¡ERROR! Ingrese el ID del libro a eliminar (mayor a 0): ")
         validacion = libreria.validar_id(id_libro)
         if validacion:
             resp = input("Confirma que quiere borrar el libro (S/N): ")
             while resp != "S" and resp != "s" and resp != "N" and resp != "n":
                 resp = input("Ingreso mal su respuesta vuelva a ingresarla (S/N): ")
             if resp == "S" or resp == "s":
-                libreria.borrar_libro(id_libro)
+                libreria.borrar_libro(str(id_libro))
             elif resp == "N" or resp == "n":
                 print("Se canceló la accion")
         else:
@@ -324,15 +360,15 @@ while True:
         libreria.hacer_linea()
 
     elif opcion == 4:
-        id_libro = int(input("Por favor ingrese el ID del libro al cual le quiere cargar su disponibilidad: "))
-        while id_libro <= 0:
-            id_libro = int(input("¡ERROR! Ingrese el ID del libro al cual le quiere cargar su disponibilidad (mayor a 0): "))
+        id_libro = input("Por favor ingrese el ID del libro al cual le quiere cargar su disponibilidad: ")
+        while id_libro <= "0":
+            id_libro = input("¡ERROR! Ingrese el ID del libro al cual le quiere cargar su disponibilidad (mayor a 0): ")
         validacion = libreria.validar_id(id_libro)
         if validacion:
-            cantidadDisponibles += int(input("Ingrese la cantidad de libros a agregar: "))
-            while cantidadDisponibles <= 0:
-                cantidadDisponibles += int(input("¡ERROR! Ingrese la cantidad de libros a agregar (mayor a 0): "))
-            libreria.incrementar_cantidad(id_libro, cantidadDisponibles)
+            cantidadIncrementar = int(input("Ingrese la cantidad de libros a agregar: "))
+            while cantidadIncrementar <= 0:
+                cantidadIncrementar = int(input("¡ERROR! Ingrese la cantidad de libros a agregar (mayor a 0): "))
+            libreria.incrementar_cantidad(id_libro, cantidadIncrementar)
         else:
             print("ID no encontrado")
         libreria.hacer_linea()
@@ -349,19 +385,19 @@ while True:
 
 
     elif opcion == 6:
-        id_libro = int(input("Ingrese el id del libro vendido: "))
-        while id_libro <= 0:
-            id_libro = int(input("¡ERROR! Ingrese el id del libro vendido(mayor a 0): "))
+        id_libro = input("Ingrese el id del libro vendido: ")
+        while id_libro <= "0":
+            id_libro = input("¡ERROR! Ingrese el id del libro vendido(mayor a 0): ")
         validacion = libreria.validar_id(id_libro)
         if validacion:
             cantidadVenta = int(input("Ingrese la cantidad de libros vendidos: "))
             while cantidadVenta <= 0:
                 cantidadVenta = int(input("¡ERROR! Ingrese la cantidad de libros vendidos: "))
             if cantidadDisponibles >= cantidadVenta:
-                cantidadDisponibles -= cantidadVenta
-                fechaVenta = input("Ingrese la fecha en la que se realizo la venta: ")
-                libreria.agregar_venta(id_libro, cantidadVenta, fechaVenta)
-                libreria.descontar_cantidad(id_libro, cantidadDisponibles)
+                fechaVenta = input("Ingrese la fecha en la que se realizo la venta (dd/mm/yyyy): ")
+                fecha_validada = libreria.validar_fecha(fechaVenta)
+                libreria.agregar_venta(id_libro, cantidadVenta, fecha_validada)
+                libreria.descontar_cantidad(id_libro, cantidadVenta)
             else:
                 print("El stock es menor a la cantidad de libros vendidos")
         else:
@@ -375,14 +411,15 @@ while True:
     elif opcion == 7:
         libreria.insertar_historico()
         porcentaje = float(input("Ingrese el porcentaje del aumento/disminucion (100 = 100%): "))
-        fechaUltimoPrecio = input("Ingrese la fecha del cambio: ")
-        
-        libreria.actualizar_precio(porcentaje, fechaUltimoPrecio)
+        fechaUltimoPrecio = input("Ingrese la fecha del cambio (dd/mm/yyyy): ")
+        fecha_validada = libreria.validar_fecha(fechaUltimoPrecio)
+        libreria.actualizar_precio(porcentaje, fecha_validada)
         libreria.hacer_linea()
     
     elif opcion == 8:
-        fechaMenu8 = input("Ingrese un fecha para mostrar sus registros anteriores: ")
-        libreria.registros_anteriores(fechaMenu8)
+        fechaMenu8 = input("Ingrese un fecha para mostrar sus registros anteriores (dd/mm/yyyy): ")
+        fecha_validada = libreria.validar_fecha(fechaMenu8)
+        libreria.registros_anteriores(fecha_validada)
         libreria.hacer_linea()
 
 
