@@ -402,8 +402,7 @@ while True:
                 print("El stock es menor a la cantidad de libros vendidos")
         else:
             print("ID no encontrado")
-
-        
+ 
 
         
         libreria.hacer_linea()
