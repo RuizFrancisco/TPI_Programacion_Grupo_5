@@ -1,7 +1,6 @@
 import sqlite3
 import datetime
 
-
 class Libreria:
     def __init__(self):
         self.conexion = Conexiones()
@@ -17,7 +16,6 @@ class Libreria:
         self.conexion.miCursor.execute("CREATE TABLE HISTORICO_LIBROS (id_libro INTEGER, precio FLOAT NOT NULL, fechaUltimoPrecio VARCHAR(30), FOREIGN KEY (id_libro, precio, fechaUltimoPrecio) REFERENCES LIBROS(id_libro, precio, fechaUltimoPrecio))")
         self.conexion.miConexion.commit()
     
-
     #funciones extras
     def validar_id(self, id_libro):
         self.conexion.miCursor.execute("SELECT id_libro FROM LIBROS")
@@ -260,19 +258,32 @@ class Libreria:
             self.conexion.miCursor.execute("SELECT * FROM HISTORICO_LIBROS ORDER BY fechaUltimoPrecio DESC")
             resultados = self.conexion.miCursor.fetchall()
             dia, mes, anio = map(int, fechaMenu8.split('/'))
+            datos_formateados = []
             for fila in resultados:
                 dia1, mes1, anio1 = map(int, fila[2].split('/'))
-                if anio > anio1:
-                    print(fila)
-                elif anio == anio1 and mes > mes1:
-                    print(fila)
+                if anio > anio1:                  
+                    datos_formateados.append(fila)
+                elif anio == anio1 and mes > mes1:                    
+                    datos_formateados.append(fila)
                 elif anio == anio1 and mes == mes1 and dia > dia1:
-                    print(fila)
-                    
+                    datos_formateados.append(fila)
+
+            encabezados = ["ID", "PRECIO", "FECHA"]
+            separador = "-" * 39
+            print(separador)
+            titulo = "\tREGISTROS ANTERIORES"
+            print(titulo)
+            print(separador)
+            print("| {:<5} | {:<9} | {:^15} |".format(encabezados[0], encabezados[1], encabezados[2]))
+            print(separador)
+
+            for fila in datos_formateados:
+                fila_formateada = "| {:<5} | {:<9} | {:^15} |".format(fila[0], fila[1], fila[2])
+                print(fila_formateada)
+            print(separador)
             print("Los registros se obtuvieron correctamente")
         except:
             print("Error al obtener los registros")
-
     #0
     def cerrar_libreria(self):
         self.conexion.cerrarConexion()
